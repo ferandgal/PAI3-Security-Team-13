@@ -7,11 +7,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.swing.JOptionPane;
@@ -23,70 +29,62 @@ public class BYODCliente {
 	/**
 	 * @param args
 	 * @throws IOException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException {
 		try {
 
 			SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 			SSLSocket socket = (SSLSocket) factory.createSocket("localhost", 7070);
 			
 			// create BufferedReader for reading server response
-			BufferedReader inputNonce = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
 			String nonceCliente = crearNonceServer();
 
 			// create PrintWriter for sending login to server
-			PrintWriter outputNonce = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+			PrintWriter output = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-			outputNonce.println(nonceCliente);
-			outputNonce.flush();
+			output.println(nonceCliente);
+			output.flush();
 
-			String nonceServidor = inputNonce.readLine();
+			String nonceServidor = input.readLine();
 			saveNonce(nonceServidor, "Servidor");
 
-			outputNonce.close();
-			inputNonce.close();
 
 
-			BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			PrintWriter output = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
 			// prompt user for user name
 			String username = JOptionPane.showInputDialog(null, "Introduzca un username:");
 			String password = JOptionPane.showInputDialog(null, "Introduzca una contraseña:");
 			String message = JOptionPane.showInputDialog(null, "Introduzca un mensaje:");
 
+			String arreglo = username + password + message;
+
+			String hmacCliente = hashing(arreglo,nonceServidor,clave);
 
 			// send user name to server
-			output.println(username);
-			output.println(password);
-			output.println(message);
-
+			output.println(arreglo);
+			output.println(hmacCliente);
 			output.flush();
 
-			// read response from server
-			String user = input.readLine();
-			String[] userSplit = user.split(",");
-			String pass = input.readLine();
-			String[] passSplit = pass.split(",");
-			String mess = input.readLine();
-			String[] messSplit = mess.split(",");
+	
+			String response = input.readLine();
+			String[] responseSplit = response.split(",");
+			String responseServer = responseSplit[0].replace("[", "");
+			String hMacServer = responseSplit[1].replace("]", "").trim();
+			
+			String hMacCliente = hashing(responseServer, nonceCliente, clave);
 
+			String respuestaCliente = CompareHash(hMacServer, hMacCliente);
+			
+			JOptionPane.showMessageDialog(null,respuestaCliente );
 			
 
-			// display response to user
-			JOptionPane.showMessageDialog(null, userSplit[0]);
-			JOptionPane.showMessageDialog(null, passSplit[0]);
-			JOptionPane.showMessageDialog(null, messSplit[0]);
-
-
-			// clean up streams and Socket
-			
 			socket.close();
 
-		} // end try
-
-		// handle exception communicating with server
+		} 
 		catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
@@ -97,7 +95,6 @@ public class BYODCliente {
 		}
 
 	}
-
 
 
 	public static String crearNonceServer() throws IOException{
@@ -116,7 +113,7 @@ public class BYODCliente {
     public static void saveNonce(String nonce, String host) throws IOException{
         
         //Accedemos a la ruta de la carpeta
-        String rutaArchivo = ".\\PAI-3-Security-Team-13\\pai\\src\\main\\resources\\nonces" + host + "\\" + nonce;
+        String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\nonces" + host + "\\" + nonce;
         File archivo = new File(rutaArchivo);
         
         //Guardamos el nonce en dicha carpeta.
@@ -131,7 +128,7 @@ public class BYODCliente {
      public String extraerNonce(String host) throws IOException{
         
         List<String> l = new ArrayList<String>();
-        String ruta = ".\\PAI-2-SecurityTeam-13\\server\\src\\main\\resources\\";
+        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
 
@@ -147,8 +144,8 @@ public class BYODCliente {
 
 
 	 //Esta función se va a encargar de eliminar un nonce que se encuentra almacenado en una carpeta
-	 public void eliminarNonce(String host){
-        String ruta = ".\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
+	 public static void eliminarNonce(String host){
+        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
 
@@ -158,5 +155,75 @@ public class BYODCliente {
             file.delete();
         }
     }
+
+		public static String hashing(String mensaje,String nonce,String clave) throws NoSuchAlgorithmException, InvalidKeyException {
+        
+			String mensajeFinal = mensaje + nonce;
+			Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+			SecretKeySpec secret_key = new SecretKeySpec(clave.getBytes(), "HmacSHA256");
+			sha256_HMAC.init(secret_key);
+			
+			byte[] hmacBytes = sha256_HMAC.doFinal(mensajeFinal.getBytes());
+			
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hmacBytes) {
+					sb.append(String.format("%02x", b));
+			}
+			String hmac = sb.toString();
+			
+			return Base64.getEncoder().encodeToString(hmac.getBytes());
+		 
+ }
+
+ public static String CompareHash(String hmac,String hmacCliente) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+	
+	System.out.println(hmac + "------" +hmacCliente);
+			//En el caso de que sean iguales registramos que todo ha salido bien, generamos el log y devolvemos la respuesta correspondiente.
+			if(hmacCliente.equals(hmac)) {
+					
+					//Especificamos la ruta del log.
+					String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
+					String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\java\\com\\ssii\\client\\logs\\acceptedLogs" + "\\" + nombreLog;
+					File archivo = new File(rutaArchivo);
+					
+					//Creamos el log.
+					archivo.createNewFile();
+					
+					FileWriter escritor = new FileWriter(archivo);
+					escritor.write(nombreLog);
+					escritor.close();
+
+
+					//Generamos la respuesta.
+					String respuesta = "Transaccion realizada con exito";
+					
+					//Tras haber almacenado el mensaje, procedemos a eliminar el nonce del cliente y del servidor.
+					eliminarNonce("Servidor");
+					eliminarNonce("Cliente");
+					return respuesta;             	
+					
+			//En el caso de que no sean iguales registramos que se ha modificado la integridad del mensaje, generamos el log y devolvemos la respuesta correspondiente.
+			}else {
+					
+					//Especificamos la ruta del log.
+					String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
+					String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\java\\com\\ssii\\client\\logs\\deniedLogs" + "\\"+nombreLog;
+					File archivo = new File(rutaArchivo);
+					
+					//Creamos el log.
+					archivo.createNewFile();	
+					
+					//Generamos la respuesta.
+					String respuesta = "Se ha alterado la integridad del mensaje";
+
+					//Tras haber almacenado el mensaje, procedemos a eliminar el nonce del cliente y del servidor.
+					eliminarNonce("Servidor");
+					eliminarNonce("Cliente");
+
+					return respuesta;
+			}
+
+}
+
 
 }

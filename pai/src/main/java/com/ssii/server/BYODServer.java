@@ -45,51 +45,35 @@ public class BYODServer {
       		SSLSocket socket = (SSLSocket) serverSocket.accept();
 			
 			// open BufferedReader for reading data from client
-			BufferedReader inputNonce = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			BufferedReader inputMessage = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			
 			// 
-			String nonceClient = inputNonce.readLine();
+			String nonceClient = inputMessage.readLine();
 			saveNonce(nonceClient, "Cliente");
 			String nonceServidor = crearNonceServer();
 
 
 			// open PrintWriter for writing data to client
-			PrintWriter outputNonce = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+			PrintWriter outputMessage = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-			outputNonce.println(nonceServidor);
-			outputNonce.flush();
+			outputMessage.println(nonceServidor);
+			outputMessage.flush();
 
-			// if (msg.equals("Hola")) {
-			// 	output.println("Welcome to the Server");
-			// } else {
-			// 	output.println("Incorrect message.");
-			// }
-
-			outputNonce.close();
-			inputNonce.close();
 
 			System.err.println("Waiting for message...");
 
-			BufferedReader inputMessage = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-			PrintWriter outputMessage = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-
-
-			String username = inputMessage.readLine();
-			String password = inputMessage.readLine();
-			String message = inputMessage.readLine();
+			String arreglo = inputMessage.readLine();
+            String hmacCliente = inputMessage.readLine();
 			
 			String nonceServ = extraerNonce("Servidor");
-			String hMacServidor = hashing(username, nonceServ, clave);
+			String hMacServidor = hashing(arreglo, nonceServ, clave);
 			String nonceCliente = extraerNonce("Cliente");
 
-			List<String> resUser = CompareHash(hMacServidor, username, nonceCliente, clave);
-			List<String> resPass = CompareHash(hMacServidor, password, nonceCliente, clave);
-			List<String> resMess = CompareHash(hMacServidor, message, nonceCliente, clave);
+			List<String> resUser = CompareHash(hMacServidor, hmacCliente, nonceCliente, clave);
 
+            System.out.println(resUser);
 			outputMessage.println(resUser);
-			outputMessage.println(resPass);
-			outputMessage.println(resMess);
+
 
 			outputMessage.flush();
 			
@@ -105,8 +89,6 @@ public class BYODServer {
 		}
 
 	}
-
-
 
 
 	public static String crearNonceServer() throws IOException{
@@ -125,7 +107,7 @@ public class BYODServer {
     public static void saveNonce(String nonce, String host) throws IOException{
         
        //Accedemos a la ruta de la carpeta
-       String rutaArchivo = ".\\PAI-3-Security-Team-13\\pai\\src\\main\\resources\\nonces" + host + "\\" + nonce;
+       String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\nonces" + host + "\\" + nonce;
        File archivo = new File(rutaArchivo);
        
        //Guardamos el nonce en dicha carpeta.
@@ -140,12 +122,11 @@ public class BYODServer {
     public static String extraerNonce(String host) throws IOException{
         
         List<String> l = new ArrayList<String>();
-        String ruta = ".\\PAI-2-SecurityTeam-13\\server\\src\\main\\resources\\";
+        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
-
         File[] files = folder.listFiles();
-
+        System.out.println(files.length);
 
         for (File file : files) {
             l.add(file.getName());
@@ -154,9 +135,10 @@ public class BYODServer {
         return l.get(0);
     }
 
+
     //Esta función se va a encargar de eliminar un nonce que se encuentra almacenado en una carpeta
     public static void eliminarNonce(String host){
-        String ruta = ".\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
+        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
 
@@ -191,6 +173,7 @@ public class BYODServer {
     //Esta función se encarga de comparar los hashes para saber si se ha modificado la integridad del mensaje.
     //Una vez se ha realizado la comprobación, se genera un log y se devuelve un hmac con la respuesta usando el nonce del cliente.
     public static List<String> CompareHash(String hmac,String hmacCliente,String nonceCliente,String clave) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+        
         List<String> res = new ArrayList<String>();
         
             //En el caso de que sean iguales registramos que todo ha salido bien, generamos el log y devolvemos la respuesta correspondiente.
@@ -198,7 +181,7 @@ public class BYODServer {
                 
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
-                String rutaArchivo = ".\\PAI-2-SecurityTeam-13\\server\\src\\main\\resources\\acceptedLogs" + "\\" + nombreLog;
+                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\java\\com\\ssii\\server\\logs\\acceptedLogs" + "\\" + nombreLog;
                 File archivo = new File(rutaArchivo);
                 
                 //Creamos el log.
@@ -224,7 +207,7 @@ public class BYODServer {
                 
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
-                String rutaArchivo = ".\\PAI-2-SecurityTeam-13\\server\\src\\main\\resources\\deniedLogs" + "\\"+nombreLog;
+                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\java\\com\\ssii\\server\\logs\\deniedLogs" + "\\"+nombreLog;
                 File archivo = new File(rutaArchivo);
                 
                 //Creamos el log.
