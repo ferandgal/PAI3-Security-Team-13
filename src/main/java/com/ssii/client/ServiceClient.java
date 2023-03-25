@@ -32,7 +32,7 @@ public class ServiceClient {
     public static void saveNonce(String nonce, String host) throws IOException{
         
         //Accedemos a la ruta de la carpeta
-        String rutaArchivo = ".\\PAI-3-Security-Team-13\\pai\\src\\main\\resources\\nonces" + host + "\\" + nonce;
+        String rutaArchivo = ".\\PAI-3-Security-Team-13\\src\\main\\resources\\nonces" + host + "\\" + nonce;
         File archivo = new File(rutaArchivo);
         
         //Guardamos el nonce en dicha carpeta.
@@ -63,7 +63,7 @@ public class ServiceClient {
 
     //Esta función se va a encargar de eliminar un nonce que se encuentra almacenado en una carpeta
     public void eliminarNonce(String host){
-        String ruta = ".\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
+        String ruta = ".\\PAI3-Security-Team-13\\src\\main\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
 

@@ -107,7 +107,7 @@ public class BYODServer {
     public static void saveNonce(String nonce, String host) throws IOException{
         
        //Accedemos a la ruta de la carpeta
-       String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\nonces" + host + "\\" + nonce;
+       String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\resources\\nonces" + host + "\\" + nonce;
        File archivo = new File(rutaArchivo);
        
        //Guardamos el nonce en dicha carpeta.
@@ -122,7 +122,7 @@ public class BYODServer {
     public static String extraerNonce(String host) throws IOException{
         
         List<String> l = new ArrayList<String>();
-        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
+        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
         File[] files = folder.listFiles();
@@ -138,7 +138,7 @@ public class BYODServer {
 
     //Esta función se va a encargar de eliminar un nonce que se encuentra almacenado en una carpeta
     public static void eliminarNonce(String host){
-        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\resources\\";
+        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
 
@@ -181,7 +181,7 @@ public class BYODServer {
                 
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
-                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\java\\com\\ssii\\server\\logs\\acceptedLogs" + "\\" + nombreLog;
+                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\logs\\acceptedLogs" + "\\" + nombreLog;
                 File archivo = new File(rutaArchivo);
                 
                 //Creamos el log.
@@ -207,7 +207,7 @@ public class BYODServer {
                 
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
-                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\pai\\src\\main\\java\\com\\ssii\\server\\logs\\deniedLogs" + "\\"+nombreLog;
+                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\logs\\deniedLogs" + "\\"+nombreLog;
                 File archivo = new File(rutaArchivo);
                 
                 //Creamos el log.
