@@ -7,12 +7,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 
 import javax.crypto.Mac;
@@ -63,13 +67,18 @@ public class BYODServer {
 			System.err.println("Waiting for message...");
 
 			String arreglo = inputMessage.readLine();
+            String password = arreglo.split("-")[1];
+
+            String passwordHash = hashing(password, "hello-world", clave);
+            System.out.println(passwordHash);
+            String arreglo2 = arreglo.split("-")[0]+"-" +passwordHash +"-"+arreglo.split("-")[2];
             String hmacCliente = inputMessage.readLine();
 			
 			String nonceServ = extraerNonce("Servidor");
 			String hMacServidor = hashing(arreglo, nonceServ, clave);
 			String nonceCliente = extraerNonce("Cliente");
 
-			List<String> resUser = CompareHash(hMacServidor, hmacCliente, nonceCliente, clave);
+			List<String> resUser = CompareHash(hMacServidor, hmacCliente, nonceCliente, clave,arreglo2);
 
             System.out.println(resUser);
 			outputMessage.println(resUser);
@@ -172,7 +181,7 @@ public class BYODServer {
     
     //Esta función se encarga de comparar los hashes para saber si se ha modificado la integridad del mensaje.
     //Una vez se ha realizado la comprobación, se genera un log y se devuelve un hmac con la respuesta usando el nonce del cliente.
-    public static List<String> CompareHash(String hmac,String hmacCliente,String nonceCliente,String clave) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+    public static List<String> CompareHash(String hmac,String hmacCliente,String nonceCliente,String clave,String mensajeClaro) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
         
         List<String> res = new ArrayList<String>();
         
@@ -193,7 +202,7 @@ public class BYODServer {
 
 
                 //Generamos la respuesta.
-                String respuesta = "Transaccion realizada con exito";
+                String respuesta = buscarFichero(mensajeClaro);
                 res.add(respuesta);
                 res.add(hashing(respuesta ,nonceCliente,clave));
                 
@@ -225,5 +234,58 @@ public class BYODServer {
                 return res;
             }
     }
+    public static String buscarFichero(String nombre) throws IOException{
+        
+        File folder = new File("C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\users\\");
+
+        ArrayList<String> listaFicheros = findAllFilesInFolder(folder);
+        int numFicheros = listaFicheros.size();
+        Collections.sort(listaFicheros);
+        String url = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\users\\";
+        nombre = url.concat(nombre);
+        String fichero = busquedaBinaria(listaFicheros, nombre, 0, numFicheros-1);
+
+        return fichero;
+    }
+    public static String busquedaBinaria(ArrayList<String> res, String nombre, int izquierda, int derecha){
+        if (izquierda > derecha){
+            return "No existe este usuario.";
+        }
+
+        int indiceElemMedio = (int) Math.floor((izquierda+derecha) / 2);
+        String archivoMedio = res.get(indiceElemMedio).toString();
+
+
+        int comparacion = nombre.compareTo(archivoMedio);
+
+        if(comparacion == 0){
+            return "Usuario autenticado con exito.";
+        }
+
+        if(comparacion < 0){
+            derecha = indiceElemMedio - 1;
+            String busqueda = busquedaBinaria(res, nombre, izquierda, derecha);
+            return busqueda;
+        }
+
+        else{
+            izquierda = indiceElemMedio + 1;
+            String busqueda = busquedaBinaria(res, nombre, izquierda, derecha);
+            return busqueda;
+        }
+
+    }
+
+    public static ArrayList<String> findAllFilesInFolder(File folder) {
+		ArrayList<String> listaFicheros = new ArrayList<>();
+        for (File file : folder.listFiles()) {
+			if (!file.isDirectory()) {
+                listaFicheros.add(file.toString());
+            } else {
+				findAllFilesInFolder(file);
+			}
+		}
+        return listaFicheros;
+	}
 
 }

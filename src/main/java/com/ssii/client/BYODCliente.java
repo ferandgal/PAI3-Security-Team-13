@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLSocket;
@@ -53,14 +54,13 @@ public class BYODCliente {
 			saveNonce(nonceServidor, "Servidor");
 
 
-
-
 			// prompt user for user name
 			String username = JOptionPane.showInputDialog(null, "Introduzca un username:");
 			String password = JOptionPane.showInputDialog(null, "Introduzca una contraseña:");
 			String message = JOptionPane.showInputDialog(null, "Introduzca un mensaje:");
 
-			String arreglo = username + password + message;
+
+			String arreglo = username +"-"+ password +"-"+ message;
 
 			String hmacCliente = hashing(arreglo,nonceServidor,clave);
 
@@ -77,7 +77,7 @@ public class BYODCliente {
 			
 			String hMacCliente = hashing(responseServer, nonceCliente, clave);
 
-			String respuestaCliente = CompareHash(hMacServer, hMacCliente);
+			String respuestaCliente = CompareHash(hMacServer, hMacCliente,responseServer);
 			
 			JOptionPane.showMessageDialog(null,respuestaCliente );
 			
@@ -175,9 +175,8 @@ public class BYODCliente {
 		 
  }
 
- public static String CompareHash(String hmac,String hmacCliente) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+ public static String CompareHash(String hmac,String hmacCliente,String mensajeClaro) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 	
-	System.out.println(hmac + "------" +hmacCliente);
 			//En el caso de que sean iguales registramos que todo ha salido bien, generamos el log y devolvemos la respuesta correspondiente.
 			if(hmacCliente.equals(hmac)) {
 					
@@ -195,7 +194,7 @@ public class BYODCliente {
 
 
 					//Generamos la respuesta.
-					String respuesta = "Transaccion realizada con exito";
+					String respuesta = mensajeClaro;
 					
 					//Tras haber almacenado el mensaje, procedemos a eliminar el nonce del cliente y del servidor.
 					eliminarNonce("Servidor");
@@ -224,6 +223,5 @@ public class BYODCliente {
 			}
 
 }
-
 
 }
