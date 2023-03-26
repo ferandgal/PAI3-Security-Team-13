@@ -24,6 +24,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
+import javax.swing.JOptionPane;
 
 
 public class BYODServer {
@@ -67,12 +68,14 @@ public class BYODServer {
 			System.err.println("Waiting for message...");
 
 			String arreglo = inputMessage.readLine();
+            String hmacCliente = inputMessage.readLine();
+
             String password = arreglo.split("-")[1];
 
             String passwordHash = hashing(password, "hello-world", clave);
-            System.out.println(passwordHash);
+   
             String arreglo2 = arreglo.split("-")[0]+"-" +passwordHash +"-"+arreglo.split("-")[2];
-            String hmacCliente = inputMessage.readLine();
+
 			
 			String nonceServ = extraerNonce("Servidor");
 			String hMacServidor = hashing(arreglo, nonceServ, clave);
@@ -80,7 +83,6 @@ public class BYODServer {
 
 			List<String> resUser = CompareHash(hMacServidor, hmacCliente, nonceCliente, clave,arreglo2);
 
-            System.out.println(resUser);
 			outputMessage.println(resUser);
 
 
@@ -90,9 +92,9 @@ public class BYODServer {
 			inputMessage.close();
 			socket.close();
 
-		} // end try
+		}
 
-		// handle exception communicating with client
+
 		catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
@@ -116,7 +118,7 @@ public class BYODServer {
     public static void saveNonce(String nonce, String host) throws IOException{
         
        //Accedemos a la ruta de la carpeta
-       String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\resources\\nonces" + host + "\\" + nonce;
+       String rutaArchivo = System.getProperty("user.dir") +"\\resources\\nonces" + host + "\\" + nonce;
        File archivo = new File(rutaArchivo);
        
        //Guardamos el nonce en dicha carpeta.
@@ -131,11 +133,10 @@ public class BYODServer {
     public static String extraerNonce(String host) throws IOException{
         
         List<String> l = new ArrayList<String>();
-        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\resources\\";
+        String ruta = System.getProperty("user.dir") +"\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
         File[] files = folder.listFiles();
-        System.out.println(files.length);
 
         for (File file : files) {
             l.add(file.getName());
@@ -147,7 +148,7 @@ public class BYODServer {
 
     //Esta función se va a encargar de eliminar un nonce que se encuentra almacenado en una carpeta
     public static void eliminarNonce(String host){
-        String ruta = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\resources\\";
+        String ruta = System.getProperty("user.dir") +"\\resources\\";
         File folder = new File(ruta + "nonces" + host + "\\");
 
 
@@ -190,7 +191,8 @@ public class BYODServer {
                 
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
-                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\logs\\acceptedLogs" + "\\" + nombreLog;
+                String rutaArchivo = System.getProperty("user.dir") +"\\com\\ssii\\server\\logs\\acceptedLogs" + "\\" + nombreLog;
+                System.out.println(rutaArchivo);
                 File archivo = new File(rutaArchivo);
                 
                 //Creamos el log.
@@ -216,9 +218,10 @@ public class BYODServer {
                 
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
-                String rutaArchivo = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\logs\\deniedLogs" + "\\"+nombreLog;
+                String rutaArchivo = System.getProperty("user.dir") +"\\com\\ssii\\server\\logs\\deniedLogs" + "\\"+nombreLog;
+                System.out.println(rutaArchivo);
                 File archivo = new File(rutaArchivo);
-                
+
                 //Creamos el log.
                 archivo.createNewFile();	
                 
@@ -235,13 +238,12 @@ public class BYODServer {
             }
     }
     public static String buscarFichero(String nombre) throws IOException{
-        
-        File folder = new File("C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\users\\");
-
+        System.out.println(nombre);
+        File folder = new File(System.getProperty("user.dir") +"\\com\\ssii\\server\\users\\");
         ArrayList<String> listaFicheros = findAllFilesInFolder(folder);
         int numFicheros = listaFicheros.size();
         Collections.sort(listaFicheros);
-        String url = "C:\\Users\\Jose_\\Desktop\\PAI3-Security-Team-13\\src\\main\\java\\com\\ssii\\server\\users\\";
+        String url = System.getProperty("user.dir") +"\\com\\ssii\\server\\users\\";
         nombre = url.concat(nombre);
         String fichero = busquedaBinaria(listaFicheros, nombre, 0, numFicheros-1);
 
@@ -249,7 +251,7 @@ public class BYODServer {
     }
     public static String busquedaBinaria(ArrayList<String> res, String nombre, int izquierda, int derecha){
         if (izquierda > derecha){
-            return "No existe este usuario.";
+            return "No existe este usuario";
         }
 
         int indiceElemMedio = (int) Math.floor((izquierda+derecha) / 2);
@@ -259,7 +261,7 @@ public class BYODServer {
         int comparacion = nombre.compareTo(archivoMedio);
 
         if(comparacion == 0){
-            return "Usuario autenticado con exito.";
+            return "Usuario autenticado con exito";
         }
 
         if(comparacion < 0){
