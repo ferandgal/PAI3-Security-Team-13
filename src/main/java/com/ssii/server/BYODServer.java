@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -46,19 +48,16 @@ public class BYODServer {
 		//esperamos por la conexión del cliente y obtenemos el nonce del cliente
 		
 			System.err.println("Waiting for nonce...");
-
       		SSLSocket socket = (SSLSocket) serverSocket.accept();
-			
-			// open BufferedReader for reading data from client
 			BufferedReader inputMessage = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			
-			// 
+            //Generamos el nonce del servidor y guardamos el del cliente
 			String nonceClient = inputMessage.readLine();
 			saveNonce(nonceClient, "Cliente");
 			String nonceServidor = crearNonceServer();
 
 
-			// open PrintWriter for writing data to client
+			// Enviamos el nonce del servidor al cliente
 			PrintWriter outputMessage = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
 			outputMessage.println(nonceServidor);
@@ -67,22 +66,26 @@ public class BYODServer {
 
 			System.err.println("Waiting for message...");
 
+            //Obtenemos el mensaje en claro junto con el hmac y verificamos que no contiene código malicioso.
 			String arreglo = inputMessage.readLine();
             String hmacCliente = inputMessage.readLine();
-
+            if(containsMaliciousCode(arreglo)||containsMaliciousCode(hmacCliente)){
+                System.exit(0);
+            };
             String password = arreglo.split("-")[1];
 
             String passwordHash = hashing(password, "hello-world", clave);
    
             String arreglo2 = arreglo.split("-")[0]+"-" +passwordHash +"-"+arreglo.split("-")[2];
 
-			
+			//Realizamos el hashing de los valores para verificar la integridad
 			String nonceServ = extraerNonce("Servidor");
 			String hMacServidor = hashing(arreglo, nonceServ, clave);
 			String nonceCliente = extraerNonce("Cliente");
 
 			List<String> resUser = CompareHash(hMacServidor, hmacCliente, nonceCliente, clave,arreglo2);
 
+            //Enviamos la respuesta al servidor
 			outputMessage.println(resUser);
 
 
@@ -192,7 +195,6 @@ public class BYODServer {
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
                 String rutaArchivo = System.getProperty("user.dir") +"\\com\\ssii\\server\\logs\\acceptedLogs" + "\\" + nombreLog;
-                System.out.println(rutaArchivo);
                 File archivo = new File(rutaArchivo);
                 
                 //Creamos el log.
@@ -219,7 +221,6 @@ public class BYODServer {
                 //Especificamos la ruta del log.
                 String nombreLog =hmacCliente.replace("/", "_") + "-" +LocalDateTime.now().toString().replace(":", "_") + ".log";
                 String rutaArchivo = System.getProperty("user.dir") +"\\com\\ssii\\server\\logs\\deniedLogs" + "\\"+nombreLog;
-                System.out.println(rutaArchivo);
                 File archivo = new File(rutaArchivo);
 
                 //Creamos el log.
@@ -237,8 +238,9 @@ public class BYODServer {
                 return res;
             }
     }
+
+    //Funciones para la busqueda binaria de ficheros
     public static String buscarFichero(String nombre) throws IOException{
-        System.out.println(nombre);
         File folder = new File(System.getProperty("user.dir") +"\\com\\ssii\\server\\users\\");
         ArrayList<String> listaFicheros = findAllFilesInFolder(folder);
         int numFicheros = listaFicheros.size();
@@ -289,5 +291,10 @@ public class BYODServer {
 		}
         return listaFicheros;
 	}
-
+    //Función para detectar código malicioso
+    public static boolean containsMaliciousCode(String input) {
+        Pattern pattern = Pattern.compile("SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|DROP|ALTER|CREATE|exec\\(\\)|xp_cmdshell\\(\\)|sp_execute_external_script\\(\\)");
+        Matcher matcher = pattern.matcher(input);
+        return matcher.find();
+      }
 }

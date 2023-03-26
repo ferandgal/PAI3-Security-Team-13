@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
@@ -35,51 +37,49 @@ public class BYODCliente {
 	 */
 	public static void main(String[] args) throws IOException, InvalidKeyException, NoSuchAlgorithmException {
 		try {
+			//Iniciamos sockets y buffers
 			SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 			SSLSocket socket = (SSLSocket) factory.createSocket("localhost", 7070);
-			
-			// create BufferedReader for reading server response
+		
 			BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
+			//creamos el nonce del cliente
 			String nonceCliente = crearNonceServer();
 
-			// create PrintWriter for sending login to server
 			PrintWriter output = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-
+			//Enviamos el nonce al servidor
 			output.println(nonceCliente);
 			output.flush();
-
+			//Leemos el nonce del servidor
 			String nonceServidor = input.readLine();
 			saveNonce(nonceServidor, "Servidor");
 
 
-			// prompt user for user name
+			//Leemos los inputs
 			String username = JOptionPane.showInputDialog(null, "Introduzca un username:");
 			String password = JOptionPane.showInputDialog(null, "Introduzca una contraseña:");
 			String message = JOptionPane.showInputDialog(null, "Introduzca un mensaje:");
 
 
-
+			//Los unimos en un mismo mensaje, le realizamos el hashing y lo enviamos al server
 			String arreglo = username +"-"+ password +"-"+ message;
-
 			String hmacCliente = hashing(arreglo,nonceServidor,clave);
 
-			// send user name to server
 			output.println(arreglo);
 			output.println(hmacCliente);
 			output.flush();
 
-	
+			//Validamos la respuesta del servidor
 			String response = input.readLine();
-
+			if(containsMaliciousCode(response)){
+				System.exit(0);
+			};
 			String[] responseSplit = response.split(",");
 			String responseServer = responseSplit[0].replace("[", "");
 			String hMacServer = responseSplit[1].replace("]", "").trim();
 			
+			//Comparamos el hashing del servidor y mostramos la respuesta
 			String hMacCliente = hashing(responseServer, nonceCliente, clave);
-
 			String respuestaCliente = CompareHash(hMacServer, hMacCliente,responseServer);
-			
 			JOptionPane.showMessageDialog(null,respuestaCliente );
 			
 
@@ -97,7 +97,7 @@ public class BYODCliente {
 
 	}
 
-
+	//Función para crear nonce
 	public static String crearNonceServer() throws IOException{
         SecureRandom random = new SecureRandom();
         // Tamaño del nonce en bytes
@@ -110,7 +110,7 @@ public class BYODCliente {
         
         return nonceBase64.replace("/", "_");
     }
-
+		//Función para guardar un nonce
     public static void saveNonce(String nonce, String host) throws IOException{
         
         //Accedemos a la ruta de la carpeta
@@ -125,7 +125,7 @@ public class BYODCliente {
         escritor.write(nonce);
         escritor.close();
      }
-
+		 //Fución para extraer un nonce
      public String extraerNonce(String host) throws IOException{
         
         List<String> l = new ArrayList<String>();
@@ -157,6 +157,7 @@ public class BYODCliente {
         }
     }
 
+		//Función para realizar el hashing de un texto
 		public static String hashing(String mensaje,String nonce,String clave) throws NoSuchAlgorithmException, InvalidKeyException {
         
 			String mensajeFinal = mensaje + nonce;
@@ -176,6 +177,7 @@ public class BYODCliente {
 		 
  }
 
+ //Funcion para comparar hashes
  public static String CompareHash(String hmac,String hmacCliente,String mensajeClaro) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
 	
 			//En el caso de que sean iguales registramos que todo ha salido bien, generamos el log y devolvemos la respuesta correspondiente.
@@ -224,6 +226,10 @@ public class BYODCliente {
 			}
 
 }
-
-
+//Función para detectar código malicioso
+public static boolean containsMaliciousCode(String input) {
+	Pattern pattern = Pattern.compile("SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|DROP|ALTER|CREATE|exec\\(\\)|xp_cmdshell\\(\\)|sp_execute_external_script\\(\\)");
+	Matcher matcher = pattern.matcher(input);
+	return matcher.find();
+}
 }
