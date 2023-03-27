@@ -29,7 +29,7 @@ public class AppTest
      * Rigorous Test :-)
      */
 	@Test
-	public void HMACCorrecto() throws IOException, InvalidKeyException, NoSuchAlgorithmException {
+	public void Userregistrado() throws IOException, InvalidKeyException, NoSuchAlgorithmException {
 		//El nonce del servidor lo creamos mediante un generador random de números y letras. 
 		//A su vez el nonce del servidor se guarda en una carpeta del servidor para utilizarlo mas adelante.
 		String nonceCliente = "h4gy67t387ygy3vgjiy376837tgyuiu3jnjg3";

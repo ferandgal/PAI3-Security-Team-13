@@ -6,7 +6,14 @@
 
 Proyecto del Grado en Ingeniería del Software de la asignatura SSII para el PAI-3
 
-Para lanzar la aplicación debemos:
+Antes de nada cabe resaltar que de acuerdo con la especificación del protocolo SSL/TLS se necesita para la autenticación de losmservidores de los correspondientes certificados. En Java se puede realizar esto mediante la creación de un almacén o repositorio de certificados de seguridad para el protocolo SSL. Java viene provisto
+de una herramienta que permite crear de manera sencilla un almacén de certificados. Para crear el
+almacén de certificados ejecutamos en consola y con permisos de administración el siguiente
+comando:
+
+keytool -genkey -keystore keystore.jks -alias ssl -keyalg RSA
+
+Seguidamente realizamos los siguientes pasos para lanzar la aplicación:
 
 1. Abrir dos ventanas de comandos con permisos de administrador.
 
